@@ -56,7 +56,6 @@ export default function RegisterScreen() {
           email: email,
           location: location,
           role: "user",
-          socials: sociallinks,
         });
         navigation.navigate("Login");
       }

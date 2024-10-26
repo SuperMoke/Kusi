@@ -31,6 +31,7 @@ export default function EditProfileScreen({ navigation }) {
   const [profileImage, setProfileImage] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [userId, setUserId] = useState(null);
+  const [accountTitle, setAccountTitle] = useState("None"); // New state for account title
 
   const auth = getAuth();
   const firestore = getFirestore();
@@ -59,6 +60,7 @@ export default function EditProfileScreen({ navigation }) {
           setLocation(userData.location || "");
           setBio(userData.bio || "");
           setProfileImage(userData.imageUrl || null);
+          setAccountTitle(userData.accountTitle || "None"); // Set account title or "None"
         } else {
           Alert.alert("Error", "User profile not found.");
         }
@@ -149,10 +151,10 @@ export default function EditProfileScreen({ navigation }) {
           <Text className="text-center mt-2 text-blue-500">Change Photo</Text>
         </TouchableOpacity>
       </View>
-      
+
       <View className="p-4">
-         <Text className="text-base  mb-1.25">Account Title:</Text>
-        <Text className="text-base font-bold  mb-2">Home Cook</Text>
+        <Text className="text-base  mb-1.25">Account Title:</Text>
+        <Text className="text-base font-bold  mb-2">{accountTitle}</Text> 
         <Text className="text-base   mb-1.25">Name:</Text>
         <TextInput
           className="bg-gray-100 p-2 rounded-lg mb-4"
@@ -176,7 +178,7 @@ export default function EditProfileScreen({ navigation }) {
           multiline
           numberOfLines={4}
         />
-       
+
         <Button
           mode="contained"
           onPress={updateProfile}
@@ -187,7 +189,7 @@ export default function EditProfileScreen({ navigation }) {
           Save Changes
         </Button>
         <Text className="text-black mt-2 text-center">
-         Want to have Account Title?{" "}
+          Want to have Account Title?{" "}
           <Text className="text-blue-500" onPress={requestVerification}>
             Request Verification Here
           </Text>

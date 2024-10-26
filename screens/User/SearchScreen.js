@@ -51,14 +51,38 @@ export default function SearchScreen({ route }) {
       return;
     }
 
+    const searchTerms = searchQuery
+      .split(/[,\s]+/)
+      .map((term) => term.trim().toLowerCase())
+      .filter((term) => term.length > 0);
+
     const fuse = new Fuse(allData, {
-      keys: ["recipeName", "name", "ingredients"], // Include 'ingredients' in the search
+      keys: [
+        "recipeName",
+        "name",
+        "ingredients.name", // Search through ingredient names
+        "ingredients", // Keep the original ingredients search
+      ],
       includeScore: true,
-      threshold: 0.4, // Adjust this threshold to control the fuzziness
+      threshold: 0.4,
+      useExtendedSearch: true, // Enable extended search
+      ignoreLocation: true, // Ignore where the match occurs in the string
+      shouldSort: true,
+      findAllMatches: true, // Find all matching items
     });
 
-    const results = fuse.search(searchQuery).map((result) => result.item);
-    setSearchResults(results);
+    // Perform individual searches for each term and combine results
+    const results = searchTerms.reduce((acc, term) => {
+      const termResults = fuse.search(term);
+      return [...acc, ...termResults];
+    }, []);
+
+    // Remove duplicates and sort by score
+    const uniqueResults = Array.from(
+      new Set(results.map((result) => result.item.id))
+    ).map((id) => results.find((result) => result.item.id === id).item);
+
+    setSearchResults(uniqueResults);
   };
 
   useEffect(() => {
@@ -102,11 +126,18 @@ export default function SearchScreen({ route }) {
       }}
     >
       <Image
-        className="w-10 h-10 rounded-full mr-3"
+        className="w-10 h-10 mr-3"
         source={
-          item.image ? { uri: item.image } : require("../../assets/Avatar.png")
+          item.type === "recipe"
+            ? item.imageUrl
+              ? { uri: item.imageUrl }
+              : require("../../assets/default-recipe.png")
+            : item.image
+            ? { uri: item.image }
+            : require("../../assets/Avatar.png")
         }
       />
+
       <View className="flex-1">
         <Text className="font-bold">
           {item.type === "recipe" ? item.recipeName : item.name}

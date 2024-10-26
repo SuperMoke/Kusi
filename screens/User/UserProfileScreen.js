@@ -151,18 +151,18 @@ export default function UserProfileScreen() {
               {userProfile.bio || "No bio available"}
             </Text>
             <View className="flex-row items-center justify-center">
-  {userProfile.userTitle && (
-    <>
-      <Text className="text-gray-600">
-        Verified by KUSI : {userProfile.userTitle}
-      </Text>
-      <Image
-        source={require('../../assets/kusi-verified-icon.png')}
-        className="w-6 h-6 ml-1"
-      />
-    </>
-  )}
-</View>
+              {userProfile.userTitle && (
+                <>
+                  <Text className="text-gray-600">
+                    Verified by KUSI : {userProfile.userTitle}
+                  </Text>
+                  <Image
+                    source={require("../../assets/kusi-verified-icon.png")}
+                    className="w-6 h-6 ml-1"
+                  />
+                </>
+              )}
+            </View>
           </View>
         </View>
         <View className="flex-row justify-around mb-4">

@@ -13,17 +13,16 @@ import {
   addDoc,
   serverTimestamp,
 } from "firebase/firestore";
-import { auth } from "../../firebaseconfig";
+import { auth } from "../../firebaseconfig"; // Adjust the path as necessary
 
-export default function ReportAccountScreen({ route, navigation }) {
-  const { reportedUserName } = route.params;
+export default function ReportPostScreen({ route, navigation }) {
+  const { reportedPostId, reportedUserName } = route.params;
   const [reason, setReason] = useState("");
   const [details, setDetails] = useState("");
 
   const reasons = [
-    "Harassment or bullying",
-    "Impersonation",
     "Inappropriate content",
+    "Harassment or bullying",
     "Spam",
     "Fake account",
     "Other",
@@ -48,41 +47,29 @@ export default function ReportAccountScreen({ route, navigation }) {
     }
 
     try {
-      await addDoc(collection(firestore, "reports_account"), {
+      await addDoc(collection(firestore, "reports_post"), {
+        reportedPostId,
         reportedUserName,
         reportingUserId: user.uid,
-        reportingUserEmail: user.email,
         reason,
         details,
-        type: "account",
-        status: "pending",
+        status: "Pending",
         createdAt: serverTimestamp(),
       });
 
-      Alert.alert(
-        "Report Submitted",
-        "Thank you for your report. We will review it shortly.",
-        [
-          {
-            text: "OK",
-            onPress: () => navigation.goBack(),
-          },
-        ]
-      );
+      Alert.alert("Success", "Your report has been submitted successfully.");
+      navigation.goBack();
     } catch (error) {
+      console.error("Error submitting report:", error);
       Alert.alert("Error", "Failed to submit report. Please try again.");
     }
   };
 
   return (
     <ScrollView className="flex-1 p-5 bg-white">
-      <Text className="text-xl font-bold mb-5">
-        Report User: {reportedUserName}
-      </Text>
+      <Text className="text-lg mb-5">Reporting: {reportedUserName}</Text>
 
-      <Text className="text-base font-semibold mb-3">
-        Select reason for reporting:
-      </Text>
+      <Text className="text-base mb-2.5">Reason for reporting:</Text>
       <View className="flex-row flex-wrap mb-5">
         {reasons.map((item) => (
           <TouchableOpacity
@@ -112,7 +99,7 @@ export default function ReportAccountScreen({ route, navigation }) {
       />
 
       <TouchableOpacity
-        className="bg-[#f2a586] p-4 rounded-lg items-center mt-4"
+        className="bg-[#f2a586] p-3.5 rounded-md items-center"
         onPress={handleSubmit}
       >
         <Text className="text-white text-lg font-bold">Submit Report</Text>

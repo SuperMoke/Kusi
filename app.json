@@ -2,7 +2,12 @@
   "expo": {
     "name": "Kusi",
     "slug": "Kusi",
-    "icon": "./assets/kusi_logo.png",
+    "splash": {
+      "backgroundColor": "#ffffff"
+    },
+    "icon": "./assets/Logo.png",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
     "version": "1.0.0",
     "assetBundlePatterns": [
       "**/*"
@@ -11,6 +16,9 @@
       "eas": {
         "projectId": "aefe48da-14bf-46ee-afff-6e5f0620b427"
       }
+    },
+    "android": {
+      "package": "com.capstone.kusi"
     }
   }
 }

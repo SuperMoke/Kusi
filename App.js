@@ -20,10 +20,13 @@ import NotificationScreen from "./screens/User/NotificationScreen";
 import EditProfileScreen from "./screens/User/EditProfileScreen";
 import SearchScreen from "./screens/User/SearchScreen";
 import VerificationRequestScreen from "./screens/User/VerificationRequestScreen";
+import ReporPostScreen from "./screens/User/ReportPostScreen";
 import ReportAccountScreen from "./screens/User/ReportAccountScreen";
 
 //Admin Screen
 import Admin_ReportDetail from "./screens/Admin/Admin_ReportDetail";
+import Admin_ReportAccountDetail from "./screens/Admin/Admin_ReportAccountDetail";
+import Admin_ReportPostDetail from "./screens/Admin/Admin_ReportPostDetail";
 
 import { TouchableOpacity } from "react-native-gesture-handler";
 import { Image, View } from "react-native";
@@ -123,6 +126,18 @@ export default function App() {
                       }}
                     />
                   </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => navigation.navigate("Login")}
+                  >
+                    <Image
+                      source={require("./assets/logout.png")}
+                      style={{
+                        width: 25,
+                        height: 25,
+                        marginRight: 20,
+                      }}
+                    />
+                  </TouchableOpacity>
                 </View>
               ),
               title: null,
@@ -166,7 +181,16 @@ export default function App() {
             component={VerificationRequestScreen}
             options={{ headerTitle: "Verification" }}
           />
-          <Stack.Screen name="ReportAccountScreen" component={ReportAccountScreen} options={{headerTitle: "Report Account"}}/>
+          <Stack.Screen
+            name="ReportPostScreen"
+            component={ReporPostScreen}
+            options={{ headerTitle: "Report Post" }}
+          />
+          <Stack.Screen
+            name="ReportAccountScreen"
+            component={ReportAccountScreen}
+            options={{ headerTitle: "Report Account" }}
+          />
 
           <Stack.Screen
             name="Login"
@@ -269,7 +293,14 @@ export default function App() {
             }}
           />
 
-          <Stack.Screen name="Admin_ReportDetail" component={Admin_ReportDetail}/>
+          <Stack.Screen
+            name="Admin_ReportAccountDetail"
+            component={Admin_ReportAccountDetail}
+          />
+          <Stack.Screen
+            name="Admin_ReportPostDetail"
+            component={Admin_ReportPostDetail}
+          />
         </Stack.Navigator>
       </NavigationContainer>
     </PaperProvider>

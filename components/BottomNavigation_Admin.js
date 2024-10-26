@@ -5,7 +5,9 @@ import { createMaterialBottomTabNavigator } from "@react-navigation/material-bot
 import { useNavigation } from "@react-navigation/native";
 
 import Admin_Home from "../screens/Admin/Admin_Home";
-import Admin_Report from "../screens/Admin/Admin_Report";
+
+import Admin_ReportedAccount from "../screens/Admin/Admin_ReportedAccount";
+import Admin_ReportedPost from "../screens/Admin/Admin_ReportedPost";
 import Admin_Verification from "../screens/Admin/Admin_Verification";
 
 const Tab = createMaterialBottomTabNavigator();
@@ -39,13 +41,26 @@ export default function BottomNavigation_Admin() {
         }}
       />
       <Tab.Screen
-        name="Admin_Report"
-        component={Admin_Report}
+        name="Admin_Report_Post"
+        component={Admin_ReportedPost}
+        options={{
+          tabBarLabel: "Reported Post",
+          tabBarIcon: ({ color }) => (
+            <Image
+              source={require("../assets/report-icon.png")}
+              style={{ width: 26, height: 26, tintColor: color }}
+            />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Admin_Report_Account"
+        component={Admin_ReportedAccount}
         options={{
           tabBarLabel: "Reported Account",
           tabBarIcon: ({ color }) => (
             <Image
-              source={require("../assets/report-icon.png")}
+              source={require("../assets/group.png")}
               style={{ width: 26, height: 26, tintColor: color }}
             />
           ),

@@ -1,4 +1,4 @@
-package com.kusi
+package com.capstone.kusi
 
 import android.app.Application
 import android.content.res.Configuration

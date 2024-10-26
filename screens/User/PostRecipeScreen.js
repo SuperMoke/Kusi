@@ -1,7 +1,13 @@
 import React, { useState } from "react";
-import { View,  Image, TouchableOpacity, SafeAreaView, FlatList } from "react-native";
+import {
+  View,
+  Image,
+  TouchableOpacity,
+  SafeAreaView,
+  FlatList,
+} from "react-native";
 import { ScrollView } from "react-native-gesture-handler";
-import { Button, TextInput, RadioButton,Text } from "react-native-paper";
+import { Button, TextInput, RadioButton, Text } from "react-native-paper";
 import { getAuth } from "firebase/auth";
 import { collection, addDoc, getFirestore } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
@@ -22,19 +28,21 @@ const categories = [
 export default function PostRecipeScreen({ navigation }) {
   const [recipeData, setRecipeData] = useState({
     recipeName: "",
-    ingredients: "",
+    ingredients: [],
     instructions: "",
     difficulty: "medium",
     prepTime: "",
     serving: "",
     image: null,
-    category: "", 
+    category: "",
   });
   const [step, setStep] = useState(1);
 
   const handleInputChange = (name, value) => {
-    setRecipeData(prevData => ({ ...prevData, [name]: value }));
+    setRecipeData((prevData) => ({ ...prevData, [name]: value }));
   };
+
+  const [newIngredient, setNewIngredient] = useState(""); // New state for single ingredient input
 
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -46,6 +54,16 @@ export default function PostRecipeScreen({ navigation }) {
 
     if (!result.canceled) {
       handleInputChange("image", result.assets[0].uri);
+    }
+  };
+
+  const addIngredient = () => {
+    if (newIngredient.trim()) {
+      setRecipeData((prevData) => ({
+        ...prevData,
+        ingredients: [...prevData.ingredients, newIngredient.trim()],
+      }));
+      setNewIngredient(""); // Clear the input
     }
   };
 
@@ -65,6 +83,7 @@ export default function PostRecipeScreen({ navigation }) {
         userId: user.uid,
         displayName: user.displayName,
         ...recipeData,
+        ingredients: recipeData.ingredients.join(", "), // Convert array to comma-separated string
         imageUrl,
       });
       alert("Recipe Posted");
@@ -92,6 +111,49 @@ export default function PostRecipeScreen({ navigation }) {
     return getDownloadURL(storageRef);
   };
 
+  const renderIngredientsSection = () => (
+    <View>
+      <Text className="text-lg font-bold mt-2.5 mb-1.25">Ingredients:</Text>
+
+      {/* Display added ingredients */}
+      <View className="mb-4">
+        {recipeData.ingredients.map((ingredient, index) => (
+          <View
+            key={index}
+            className="flex-row items-center bg-gray-100 p-2 mb-2 rounded"
+          >
+            <Text className="flex-1">{ingredient}</Text>
+            <TouchableOpacity
+              onPress={() => {
+                setRecipeData((prevData) => ({
+                  ...prevData,
+                  ingredients: prevData.ingredients.filter(
+                    (_, i) => i !== index
+                  ),
+                }));
+              }}
+              className="p-2"
+            >
+              <Text className="text-red-500">✕</Text>
+            </TouchableOpacity>
+          </View>
+        ))}
+      </View>
+      <View className="flex-row items-center mb-2">
+        <TextInput
+          className="flex-1 mr-2"
+          mode="outlined"
+          value={newIngredient}
+          onChangeText={setNewIngredient}
+          placeholder="Enter an ingredient"
+        />
+        <TouchableOpacity onPress={addIngredient} className="bg-[#f2a586] p-3 ">
+          <Text className="text-white text-xl">+</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+
   const renderStep1 = () => (
     <ScrollView>
       <Text className="text-lg font-bold mt-2.5 mb-1.25">Recipe Name:</Text>
@@ -111,7 +173,6 @@ export default function PostRecipeScreen({ navigation }) {
               recipeData.category === cat ? "bg-[#f2a586]" : "bg-gray-200"
             }`}
           >
-            
             <Text
               className={`text-sm ${
                 recipeData.category === cat ? "text-white" : "text-gray-700"
@@ -141,7 +202,9 @@ export default function PostRecipeScreen({ navigation }) {
         onChangeText={(text) => handleInputChange("serving", text)}
         placeholder="e.g., 5 people"
       />
-      <Text className="text-lg font-bold mt-2.5 mb-1.25">Preparation Time:</Text>
+      <Text className="text-lg font-bold mt-2.5 mb-1.25">
+        Preparation Time:
+      </Text>
       <TextInput
         className="mb-2.5"
         mode="outlined"
@@ -149,15 +212,9 @@ export default function PostRecipeScreen({ navigation }) {
         onChangeText={(text) => handleInputChange("prepTime", text)}
         placeholder="e.g., 30 minutes"
       />
-      <Text className="text-lg font-bold mt-2.5 mb-1.25">Ingredients:</Text>
-      <TextInput
-        className="mb-2.5 py-3"
-        mode="outlined"
-        multiline
-        numberOfLines={6}
-        value={recipeData.ingredients}
-        onChangeText={(text) => handleInputChange("ingredients", text)}
-      />
+
+      {renderIngredientsSection()}
+
       <Text className="text-lg font-bold mt-2.5 mb-1.25">Instructions:</Text>
       <TextInput
         className="mb-2.5 py-3"
@@ -168,7 +225,11 @@ export default function PostRecipeScreen({ navigation }) {
         onChangeText={(text) => handleInputChange("instructions", text)}
       />
       <View className="mt-2"></View>
-      <Button mode="contained" className="bg-[#f2a586]" onPress={() => setStep(2)}>
+      <Button
+        mode="contained"
+        className="bg-[#f2a586]"
+        onPress={() => setStep(2)}
+      >
         Next
       </Button>
     </ScrollView>
@@ -178,15 +239,24 @@ export default function PostRecipeScreen({ navigation }) {
     <ScrollView className="p-4">
       <TouchableOpacity onPress={pickImage} className="mb-4 items-center">
         {recipeData.image ? (
-          <Image source={{ uri: recipeData.image }} className="w-full h-52 rounded-lg" />
+          <Image
+            source={{ uri: recipeData.image }}
+            className="w-full h-52 rounded-lg"
+          />
         ) : (
           <View className="border-2 border-gray-300 border-dashed rounded-lg h-80 w-72">
-            <Text className="text-gray-500 text-lg text-center mt-36">Tap to Upload Image</Text>
+            <Text className="text-gray-500 text-lg text-center mt-36">
+              Tap to Upload Image
+            </Text>
           </View>
         )}
       </TouchableOpacity>
       <View className="m-2.5"></View>
-      <Button mode="contained" className="bg-[#f2a586]" onPress={handlePostAction}>
+      <Button
+        mode="contained"
+        className="bg-[#f2a586]"
+        onPress={handlePostAction}
+      >
         Post
       </Button>
       <View className="m-2.5"></View>

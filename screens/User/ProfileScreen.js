@@ -1,5 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { View, Image, FlatList, TouchableOpacity, Alert, RefreshControl } from "react-native";
+import {
+  View,
+  Image,
+  FlatList,
+  TouchableOpacity,
+  Alert,
+  RefreshControl,
+} from "react-native";
 import { Text } from "react-native-paper";
 import {
   getFirestore,
@@ -226,7 +233,7 @@ export default function ProfileScreen({ route }) {
             <Text className="text-gray-600">
               {userProfile.bio || "No bio available"}
             </Text>
-             <View className="flex-row items-center justify-center">
+            <View className="flex-row items-center justify-center">
               {userProfile.userTitle && (
                 <>
                   <Text className="text-gray-600">
@@ -240,7 +247,6 @@ export default function ProfileScreen({ route }) {
               )}
             </View>
           </View>
-         
         </View>
         <View className="flex-row justify-around mb-4">
           <View className="items-center">
@@ -276,12 +282,29 @@ export default function ProfileScreen({ route }) {
             {showChatButton && (
               <TouchableOpacity
                 className="bg-[#f2a586]  rounded-lg items-center px-14 py-2 m-1"
-                onPress={() => navigation.navigate("ChatScreen", { userId: userProfile.uid, displayName: userProfile.name })}
+                onPress={() =>
+                  navigation.navigate("ChatScreen", {
+                    userId: userProfile.uid,
+                    displayName: userProfile.name,
+                  })
+                }
               >
                 <Text className="text-white font-bold">Chat</Text>
               </TouchableOpacity>
             )}
           </View>
+        )}
+        {currentUserEmail !== userProfile.email && (
+          <TouchableOpacity
+            className="bg-red-500 rounded-lg items-center px-14 py-2 m-1"
+            onPress={() =>
+              navigation.navigate("ReportAccountScreen", {
+                reportedUserName: userProfile.name,
+              })
+            }
+          >
+            <Text className="text-white font-bold">Report Account</Text>
+          </TouchableOpacity>
         )}
       </View>
       <FlatList

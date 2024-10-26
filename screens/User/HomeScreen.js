@@ -290,7 +290,7 @@ export default function HomeScreen() {
     switch (action) {
       case "report":
         console.log("Report recipe", recipeId);
-        navigation.navigate("ReportAccountScreen", {
+        navigation.navigate("ReportPostScreen", {
           reportedPostId: recipeId,
           reportedUserName: recipeOwnerName,
         });

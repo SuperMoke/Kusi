@@ -1,4 +1,4 @@
-package com.kusi
+package com.capstone.kusi
 
 import android.os.Build
 import android.os.Bundle
