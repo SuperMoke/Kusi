@@ -7,7 +7,7 @@ import {
   Platform,
   Image,
 } from "react-native";
-import { Text, Button, Avatar } from "react-native-paper";
+import { Text, Button, Avatar, IconButton } from "react-native-paper";
 import {
   getFirestore,
   doc,
@@ -19,7 +19,7 @@ import {
   where,
   getDocs,
   addDoc,
-  serverTimestamp
+  serverTimestamp,
 } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 
@@ -29,6 +29,7 @@ export default function CommentScreen({ route }) {
   const [newComment, setNewComment] = useState("");
   const auth = getAuth();
   const currentUser = auth.currentUser;
+  const [editingComment, setEditingComment] = useState(null);
 
   useEffect(() => {
     const fetchComments = async () => {
@@ -82,7 +83,7 @@ export default function CommentScreen({ route }) {
         timestamp: new Date().toISOString(),
       };
 
-     const recipeDoc = await getDoc(doc(firestore, 'post', recipeId));
+      const recipeDoc = await getDoc(doc(firestore, "post", recipeId));
       const recipeData = recipeDoc.data();
       if (recipeData.userId !== currentUser.uid) {
         createNotification(recipeId, recipeData.userId);
@@ -131,22 +132,25 @@ export default function CommentScreen({ route }) {
     if (!user) return;
 
     // Query to find the user document based on the UID
-    const userQuery = query(collection(firestore, 'users'), where('uid', '==', user.uid));
+    const userQuery = query(
+      collection(firestore, "users"),
+      where("uid", "==", user.uid)
+    );
     const userSnapshot = await getDocs(userQuery);
 
     if (userSnapshot.empty) {
-      console.error('User document not found');
+      console.error("User document not found");
       return;
     }
 
     const userData = userSnapshot.docs[0].data();
 
-    const notificationRef = collection(firestore, 'notifications');
+    const notificationRef = collection(firestore, "notifications");
 
     await addDoc(notificationRef, {
-      type: 'comment',
+      type: "comment",
       senderId: user.uid,
-      senderName: userData.name || 'Anonymous',
+      senderName: userData.name || "Anonymous",
       senderAvatar: userData.imageUrl || null,
       recipientId: recipeOwnerId,
       recipeId,
@@ -154,16 +158,107 @@ export default function CommentScreen({ route }) {
     });
   };
 
+  const handleEditComment = (comment) => {
+    setEditingComment(comment);
+    setNewComment(comment.text);
+  };
+
+  const handleDeleteComment = async (comment) => {
+    const firestore = getFirestore();
+    const recipeRef = doc(firestore, "post", recipeId);
+
+    try {
+      const recipeDoc = await getDoc(recipeRef);
+      const recipeData = recipeDoc.data();
+
+      if (
+        comment.email === currentUser.email ||
+        recipeData.userId === currentUser.uid
+      ) {
+        const currentComments = recipeData.comments;
+        const updatedComments = currentComments.filter(
+          (c) => c.timestamp !== comment.timestamp
+        );
+
+        await updateDoc(recipeRef, {
+          comments: updatedComments,
+        });
+
+        setComments(comments.filter((c) => c.timestamp !== comment.timestamp));
+      }
+    } catch (error) {
+      console.error("Error deleting comment: ", error);
+    }
+  };
+
+  const handleUpdateComment = async () => {
+    if (!editingComment || newComment.trim() === "") return;
+
+    const firestore = getFirestore();
+    const recipeRef = doc(firestore, "post", recipeId);
+
+    try {
+      const recipeDoc = await getDoc(recipeRef);
+      const currentComments = recipeDoc.data().comments;
+      const updatedComments = currentComments.map((comment) => {
+        if (comment.timestamp === editingComment.timestamp) {
+          return { ...comment, text: newComment };
+        }
+        return comment;
+      });
+
+      await updateDoc(recipeRef, {
+        comments: updatedComments,
+      });
+
+      setComments(
+        comments.map((comment) => {
+          if (comment.timestamp === editingComment.timestamp) {
+            return { ...comment, text: newComment };
+          }
+          return comment;
+        })
+      );
+
+      setNewComment("");
+      setEditingComment(null);
+    } catch (error) {
+      console.error("Error updating comment: ", error);
+    }
+  };
+
   const renderCommentItem = ({ item }) => (
     <View className="flex-row items-start p-4 bg-white rounded-lg mb-2 shadow-sm">
       <Avatar.Image
         size={40}
-        source={item.userAvatar ? { uri: item.userAvatar } : require('../../assets/Avatar.png')}
+        source={
+          item.userAvatar
+            ? { uri: item.userAvatar }
+            : require("../../assets/Avatar.png")
+        }
         className="mr-3"
       />
       <View className="flex-1">
-        <Text className="font-bold text-sm mb-1">{item.userName}</Text>
-        <Text className="text-sm text-gray-700">{item.text}</Text>
+        <View className="flex-row justify-between items-center">
+          <Text className="font-bold text-sm">{item.userName}</Text>
+          <View className="flex-row items-center ml-2">
+            {item.email === currentUser.email && (
+              <IconButton
+                icon={require("../../assets/edit-icon.png")}
+                size={20}
+                onPress={() => handleEditComment(item)}
+                style={{ margin: 0, padding: 0 }}
+              />
+            )}
+            <IconButton
+              icon={require("../../assets/delete-icon.png")}
+              size={20}
+              onPress={() => handleDeleteComment(item)}
+              style={{ margin: 0, padding: 0 }}
+            />
+          </View>
+        </View>
+        <Text className="text-sm text-gray-700 -mt-1">{item.text}</Text>
         <Text className="text-xs text-gray-500 mt-1">
           {new Date(item.timestamp).toLocaleString()}
         </Text>
@@ -198,7 +293,9 @@ export default function CommentScreen({ route }) {
         keyExtractor={(item, index) => index.toString()}
         className="border-b border-gray-200"
         ListEmptyComponent={
-          <Text className="text-center text-gray-500 py-4">No comments yet.</Text>
+          <Text className="text-center text-gray-500 py-4">
+            No comments yet.
+          </Text>
         }
       />
       <View className="p-4 bg-white border-t border-gray-200">
@@ -212,9 +309,9 @@ export default function CommentScreen({ route }) {
           <Button
             mode="contained"
             className="bg-[#f2a586] rounded-full"
-            onPress={addComment}
+            onPress={editingComment ? handleUpdateComment : addComment}
           >
-            Post
+            {editingComment ? "Update" : "Post"}
           </Button>
         </View>
       </View>

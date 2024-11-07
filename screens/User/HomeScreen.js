@@ -23,9 +23,11 @@ import {
   setDoc,
   addDoc,
   serverTimestamp,
+  deleteDoc,
 } from "firebase/firestore";
 import { useNavigation } from "@react-navigation/native";
 import { auth } from "../../firebaseconfig"; // Adjust the path as necessary
+import { Alert } from "react-native";
 
 export default function HomeScreen() {
   const [recipes, setRecipes] = useState([]);
@@ -50,6 +52,7 @@ export default function HomeScreen() {
           ...doc.data(),
           likes: doc.data().likes || 0, // Initialize likes to 0 if it doesn't exist
           saved: doc.data().saved || false, // Initialize saved to false if it doesn't exist
+          ingredients: doc.data().ingredients || "", // Add this line
         }));
 
         const updatedRecipes = await Promise.all(
@@ -138,6 +141,7 @@ export default function HomeScreen() {
   const onRefresh = async () => {
     setRefreshing(true);
     await fetchRecipesAndAuthors();
+    setRefreshing(false);
   };
 
   const createNotification = async (type, recipeId, recipeOwnerId) => {
@@ -218,6 +222,24 @@ export default function HomeScreen() {
     );
   };
 
+  const handleDeleteRecipe = async (recipeId) => {
+    const firestore = getFirestore();
+    try {
+      // Delete the document from Firestore
+      await deleteDoc(doc(firestore, "post", recipeId));
+
+      // Update local state to remove the deleted recipe
+      setRecipes((prevRecipes) =>
+        prevRecipes.filter((recipe) => recipe.id !== recipeId)
+      );
+
+      alert("Recipe deleted successfully");
+    } catch (error) {
+      console.error("Error deleting recipe:", error);
+      alert("Failed to delete recipe");
+    }
+  };
+
   const toggleSave = async (recipeId) => {
     const firestore = getFirestore();
     const recipeRef = doc(firestore, "post", recipeId);
@@ -296,12 +318,22 @@ export default function HomeScreen() {
         });
         break;
       case "edit":
-        console.log("Edit recipe", recipeId);
-        // Navigate to edit screen
+        navigation.navigate("EditRecipe", { recipeId: recipeId });
+
         break;
       case "delete":
-        console.log("Delete recipe", recipeId);
-        // Implement delete functionality
+        Alert.alert(
+          "Delete Recipe",
+          "Are you sure you want to delete this recipe?",
+          [
+            { text: "Cancel", style: "cancel" },
+            {
+              text: "Delete",
+              onPress: () => handleDeleteRecipe(recipeId),
+              style: "destructive",
+            },
+          ]
+        );
         break;
     }
     handleMenuClose(recipeId);
@@ -315,7 +347,7 @@ export default function HomeScreen() {
 
     return (
       <View className="border-b border-gray-200 mb-4">
-        <View className="flex-row items-center p-4">
+        <View className="flex-row items-center justify-between p-4">
           <TouchableOpacity
             className="flex-row items-center"
             onPress={() =>
@@ -344,7 +376,7 @@ export default function HomeScreen() {
               <TouchableOpacity onPress={() => handleMenuPress(item.id)}>
                 <Image
                   source={require("../../assets/three-dot-icon.png")}
-                  className="h-5 w-5 ml-24"
+                  className="h-5 w-5 "
                 />
               </TouchableOpacity>
             }
@@ -357,14 +389,18 @@ export default function HomeScreen() {
                 title="Report"
               />
             )}
-            <Menu.Item
-              onPress={() => handleMenuAction("edit", item.id)}
-              title="Edit"
-            />
-            <Menu.Item
-              onPress={() => handleMenuAction("delete", item.id)}
-              title="Delete"
-            />
+            {isCurrentUserPost && (
+              <>
+                <Menu.Item
+                  onPress={() => handleMenuAction("edit", item.id)}
+                  title="Edit"
+                />
+                <Menu.Item
+                  onPress={() => handleMenuAction("delete", item.id)}
+                  title="Delete"
+                />
+              </>
+            )}
           </Menu>
         </View>
         <Image
@@ -410,7 +446,9 @@ export default function HomeScreen() {
           <Text className="font-bold text-lg mb-2">{item.recipeName}</Text>
 
           <Text className="text-gray-700 text-sm mb-2">
-            {item.ingredients.split(",")[0]}...
+            {typeof item.ingredients === "string"
+              ? `${item.ingredients.split(",")[0]}...`
+              : "No ingredients listed"}
           </Text>
           <TouchableOpacity
             onPress={() =>
@@ -483,7 +521,12 @@ export default function HomeScreen() {
         renderItem={renderRecipeItem}
         keyExtractor={(item) => item.id}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={["#f2a586"]} // Matches your app's theme color
+            tintColor="#f2a586"
+          />
         }
       />
     </View>

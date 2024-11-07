@@ -75,11 +75,13 @@ export default function Admin_ReportAccountDetail({ route }) {
                 status: "banned",
               });
 
-              // Update report status to finished
-              const reportsRef = doc(firestore, "reports", report.id);
-              await updateDoc(reportsRef, {
-                status: "finished",
-              });
+              // Check if report.id exists before updating
+              if (report.id) {
+                const reportsRef = doc(firestore, "reports_account", report.id);
+                await updateDoc(reportsRef, {
+                  status: "finished",
+                });
+              }
 
               Alert.alert(
                 "Success",
@@ -89,6 +91,7 @@ export default function Admin_ReportAccountDetail({ route }) {
             }
           } catch (error) {
             Alert.alert("Error", "Failed to ban user");
+            console.log(error);
           }
         },
       },

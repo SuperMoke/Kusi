@@ -36,6 +36,7 @@ export default function ProfileScreen({ route }) {
   const [error, setError] = useState(null);
   const [refreshing, setRefreshing] = useState(false); // State for refresh control
   const [showChatButton, setShowChatButton] = useState(false); // New state for chat button visibility
+  const [currentUserUid, setCurrentUserUid] = useState(null);
 
   useEffect(() => {
     navigation.setOptions({
@@ -60,6 +61,14 @@ export default function ProfileScreen({ route }) {
     fetchData();
   }, [displayName]);
 
+  const fetchCurrentUserUid = async () => {
+    const auth = getAuth();
+    const user = auth.currentUser;
+    if (user) {
+      setCurrentUserUid(user.uid);
+    }
+  };
+
   const fetchCurrentUserEmail = async () => {
     const auth = getAuth();
     const user = auth.currentUser;
@@ -70,32 +79,28 @@ export default function ProfileScreen({ route }) {
 
   const fetchUserProfile = async () => {
     const firestore = getFirestore();
+    const auth = getAuth();
+    const currentUser = auth.currentUser;
+
+    if (!currentUser) return;
+
     const usersCollection = collection(firestore, "users");
-    const userQuery = query(usersCollection, where("name", "==", displayName));
+    const userQuery = query(usersCollection, where("uid", "==", userId)); // Using userId from route.params
     const userSnapshot = await getDocs(userQuery);
 
     if (!userSnapshot.empty) {
       const userDoc = userSnapshot.docs[0];
       const userData = userDoc.data();
       const userWithId = { id: userDoc.id, ...userData };
-      console.log("Fetched user data:", userWithId); // Log fetched user data
       setUserProfile(userWithId);
       setFollowersCount(userData.followers?.length || 0);
       setFollowingCount(userData.following?.length || 0);
 
-      const auth = getAuth();
-      const currentUser = auth.currentUser;
       if (currentUser && Array.isArray(userData.followers)) {
         const isFollowingUser = userData.followers.includes(currentUser.uid);
         setIsFollowing(isFollowingUser);
-        setShowChatButton(isFollowingUser); // Set chat button visibility based on follow status
-      } else {
-        setIsFollowing(false);
-        setShowChatButton(false); // Ensure chat button is hidden if not following
+        setShowChatButton(isFollowingUser);
       }
-    } else {
-      console.log("No user found with name:", displayName);
-      setError("User not found");
     }
   };
 
@@ -173,8 +178,14 @@ export default function ProfileScreen({ route }) {
   const onRefresh = async () => {
     setRefreshing(true);
     try {
+      // Fetch data sequentially to ensure all updates are captured
+      await fetchCurrentUserEmail();
       await fetchUserProfile();
       await fetchUserPosts();
+
+      // Force a state update after all fetches complete
+      setUserPosts((prevPosts) => [...prevPosts]);
+      setUserProfile((prevProfile) => ({ ...prevProfile }));
     } catch (err) {
       console.error("Error refreshing data:", err);
       setError("An error occurred while refreshing data. Please try again.");
@@ -185,8 +196,13 @@ export default function ProfileScreen({ route }) {
 
   const renderPostItem = ({ item }) => (
     <TouchableOpacity
-      className="w-1/3 aspect-square p-1"
-      onPress={() => navigation.navigate("RecipeDetail", { recipe: item })}
+      className="w-1/3 aspect-square p-1 relative"
+      onPress={() => {
+        navigation.navigate("PostListScreen", {
+          userPosts: userPosts,
+          displayName: userProfile.name,
+        });
+      }}
     >
       <Image source={{ uri: item.imageUrl }} className="w-full h-full" />
     </TouchableOpacity>
@@ -262,7 +278,7 @@ export default function ProfileScreen({ route }) {
             <Text className="text-gray-600">Following</Text>
           </View>
         </View>
-        {currentUserEmail === userProfile.email ? (
+        {currentUserUid === userProfile.uid ? (
           <TouchableOpacity
             className="bg-[#f2a586] p-2 rounded-lg items-center"
             onPress={() => navigation.navigate("EditProfile")}
@@ -313,8 +329,15 @@ export default function ProfileScreen({ route }) {
         keyExtractor={(item) => item.id}
         numColumns={3}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={["#f2a586"]} // Matches your app's theme color
+            tintColor="#f2a586"
+          />
         }
+        onEndReachedThreshold={0.5}
+        removeClippedSubviews={true}
       />
     </View>
   );

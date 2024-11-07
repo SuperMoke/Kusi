@@ -1,5 +1,13 @@
 import React, { useState, useEffect } from "react";
-import { View, Image, FlatList, TouchableOpacity, Alert } from "react-native";
+import {
+  View,
+  Image,
+  FlatList,
+  TouchableOpacity,
+  Alert,
+  RefreshControl,
+} from "react-native";
+
 import { Text } from "react-native-paper";
 import {
   getFirestore,
@@ -24,6 +32,7 @@ export default function UserProfileScreen() {
   const [followingCount, setFollowingCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     navigation.setOptions({
@@ -48,6 +57,20 @@ export default function UserProfileScreen() {
     fetchData();
   }, []);
 
+  const onRefresh = React.useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await fetchCurrentUserEmail();
+      await fetchUserProfile();
+      await fetchUserPosts();
+    } catch (err) {
+      console.error("Error refreshing data:", err);
+      setError("An error occurred while refreshing. Please try again.");
+    } finally {
+      setRefreshing(false);
+    }
+  }, []);
+
   const fetchCurrentUserEmail = async () => {
     const auth = getAuth();
     const user = auth.currentUser;
@@ -66,7 +89,7 @@ export default function UserProfileScreen() {
 
     const firestore = getFirestore();
     const usersCollection = collection(firestore, "users");
-    const userQuery = query(usersCollection, where("email", "==", user.email));
+    const userQuery = query(usersCollection, where("uid", "==", user.uid));
     const userSnapshot = await getDocs(userQuery);
 
     if (!userSnapshot.empty) {
@@ -102,8 +125,13 @@ export default function UserProfileScreen() {
 
   const renderPostItem = ({ item }) => (
     <TouchableOpacity
-      className="w-1/3 aspect-square p-1"
-      onPress={() => navigation.navigate("RecipeDetail", { recipe: item })}
+      className="w-1/3 aspect-square p-1 relative"
+      onPress={() => {
+        navigation.navigate("PostListScreen", {
+          userPosts: userPosts,
+          displayName: userProfile.name,
+        });
+      }}
     >
       <Image source={{ uri: item.imageUrl }} className="w-full h-full" />
     </TouchableOpacity>
@@ -134,7 +162,17 @@ export default function UserProfileScreen() {
   }
 
   return (
-    <View className="flex-1 bg-white">
+    <View
+      className="flex-1 bg-white"
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          colors={["#f2a586"]}
+          tintColor="#f2a586"
+        />
+      }
+    >
       <View className="p-4">
         <View className="flex-row items-center mb-4">
           <Image

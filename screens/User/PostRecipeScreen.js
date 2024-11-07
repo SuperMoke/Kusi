@@ -115,7 +115,6 @@ export default function PostRecipeScreen({ navigation }) {
     <View>
       <Text className="text-lg font-bold mt-2.5 mb-1.25">Ingredients:</Text>
 
-      {/* Display added ingredients */}
       <View className="mb-4">
         {recipeData.ingredients.map((ingredient, index) => (
           <View
